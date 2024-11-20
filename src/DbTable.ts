@@ -1,24 +1,26 @@
-export type DbSetFields<T extends object> = { [K in keyof T]: string };
+export type DbSetFields<TSetProto extends object> = {
+  [K in keyof TSetProto]: string;
+};
 
 export type DbSourceFields<TEntry extends DbSourceEntry<object>> = {
   [K in keyof TEntry]: DbSetFields<
-    TEntry[K] extends DbSet<infer TSet> ? TSet : never
+    TEntry[K] extends DbSet<infer TSetProto> ? TSetProto : never
   >;
 };
 // ValueContainer<infer U> ? U : never
 // extends ValueContainer<infer U> ? U : never
-export type DbSourceEntry<TSet extends object> = {
-  [key: string]: DbSet<TSet>;
+export type DbSourceEntry<TSetProto extends object> = {
+  [key: string]: DbSet<TSetProto>;
 };
 
-export abstract class DbSet<T extends object> {
-  private proto: T;
-  constructor(proto: T) {
+export abstract class DbSet<TSetProto extends object> {
+  private proto: TSetProto;
+  constructor(proto: TSetProto) {
     this.proto = proto;
   }
 
-  fields(): DbSetFields<T> {
-    const fieldNames = {} as DbSetFields<T>;
+  fields(): DbSetFields<TSetProto> {
+    const fieldNames = {} as DbSetFields<TSetProto>;
     for (const key in this.proto) {
       if (this.proto.hasOwnProperty(key)) {
         fieldNames[key] = key;
@@ -31,10 +33,10 @@ export abstract class DbSet<T extends object> {
   abstract querySql(): string;
 }
 
-export class DbTable<T extends object> extends DbSet<T> {
+export class DbTable<TSetProto extends object> extends DbSet<TSetProto> {
   private name: string;
 
-  constructor(name: string, proto: T) {
+  constructor(name: string, proto: TSetProto) {
     super(proto);
     this.name = name;
   }
@@ -66,7 +68,7 @@ export class DbTable<T extends object> extends DbSet<T> {
 //   }
 // }
 
-export class DbSource<TSet extends object, TEntry extends DbSourceEntry<TSet>> {
+export class DbSource<TEntry extends DbSourceEntry<object>> {
   constructor(sources: TEntry) {}
   fields(): DbSourceFields<TEntry> {
     return {} as DbSourceFields<TEntry>;
@@ -79,6 +81,12 @@ export class DbSource<TSet extends object, TEntry extends DbSourceEntry<TSet>> {
   //   dbSetFields(): DbSetFields<TSet> {
   //     return {} as DbSetFields<TSet>;
   //   }
+
+  join<TJoinedEntry extends DbSourceEntry<object>>(
+    entry: TJoinedEntry
+  ): DbSource<TEntry & TJoinedEntry> {
+    return {} as DbSource<TEntry & TJoinedEntry>;
+  }
 
   entry(): TEntry {
     return {} as TEntry;

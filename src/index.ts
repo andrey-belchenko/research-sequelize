@@ -49,31 +49,28 @@ const qry2 = new DbQuery(qry, (fields) => ({
 
 console.log(qry2.querySql());
 
-
-let src = new DbSource({ a: qry2 });
+let src = new DbSource({ a: qry2 }).join({ b: table }).join({ c: qry });
 
 let ff = src.fields();
 
 let x1 = ff.a.field3;
 
-let xx = qry2.fields()
+let xx = qry2.fields();
 
-let a:DbQuery<{
+let a: DbQuery<
+  {
     field1: string;
     field2: string;
-}, {
+  },
+  {
     field3: string;
     field4: string;
-}>
-
-
-
+  }
+>;
 
 // let ss = src.dbSet();
 
 let ee = src.entry();
-
-
 
 // let ssf = src.dbSetFields();
 

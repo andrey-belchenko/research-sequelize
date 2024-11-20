@@ -1,11 +1,12 @@
 export type DbSetFields<T extends object> = { [K in keyof T]: string };
 
-export type DbSetFields1<TDbSet extends DbSet<T>,T extends object> = DbSetFields<T>;
-
 export type DbSourceFields<TEntry extends DbSourceEntry<object>> = {
-  [K in keyof TEntry]: DbSetFields<TEntry[K]>;
+  [K in keyof TEntry]: DbSetFields<
+    TEntry[K] extends DbSet<infer TSet> ? TSet : never
+  >;
 };
-
+// ValueContainer<infer U> ? U : never
+// extends ValueContainer<infer U> ? U : never
 export type DbSourceEntry<TSet extends object> = {
   [key: string]: DbSet<TSet>;
 };
@@ -168,13 +169,24 @@ export function wrapValues<T extends object>(
   return result;
 }
 
-function processWrappedValues<T extends Record<string, any>>(wrapped: {
-  [K in keyof T]: ValueContainer<T[K]>;
-}) {
-  for (const key in wrapped) {
-    const container = wrapped[key];
-    console.log(`Key: ${key}, Value: ${container.getValue()}`);
+// export function unwrapValues(wrappedValues:any){
+//     const result: any = {};
+//     for (let name in wrappedValues) {
+//       const value = wrappedValues[name].getValue();
+//       result[name] = value;
+//     }
+//     return result;
+// }
+
+export function unwrapValues<T extends Record<string, ValueContainer<any>>>(
+  wrappedValues: T
+): { [K in keyof T]: T[K] extends ValueContainer<infer U> ? U : never } {
+  const result: any = {};
+  for (let name in wrappedValues) {
+    const value = wrappedValues[name].getValue();
+    result[name] = value;
   }
+  return result;
 }
 
 const values = {
@@ -183,3 +195,13 @@ const values = {
 };
 
 const wrappedValues = wrapValues(values);
+const vals = unwrapValues(wrappedValues);
+
+function processWrappedValues<T extends Record<string, any>>(wrapped: {
+  [K in keyof T]: ValueContainer<T[K]>;
+}) {
+  for (const key in wrapped) {
+    const container = wrapped[key];
+    console.log(`Key: ${key}, Value: ${container.getValue()}`);
+  }
+}

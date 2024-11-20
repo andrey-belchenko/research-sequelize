@@ -54,7 +54,7 @@ let src = new DbSource({ a: qry2 });
 
 let ff = src.fields();
 
-let qq = ff.a
+let x1 = ff.a.field3;
 
 let xx = qry2.fields()
 

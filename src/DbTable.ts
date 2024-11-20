@@ -21,11 +21,11 @@ export abstract class DbSet<TSetProto extends object> {
     this.proto = proto;
   }
 
-  fields(): DbSetFields<TSetProto> {
+  fields(alias: string): DbSetFields<TSetProto> {
     const fieldNames = {} as DbSetFields<TSetProto>;
     for (const key in this.proto) {
       if (this.proto.hasOwnProperty(key)) {
-        fieldNames[key] = key;
+        fieldNames[key] = `${alias}.${key}`;
       }
     }
     return fieldNames;
@@ -61,7 +61,7 @@ export class DbSource<TSourceEntries extends DbSourceEntries<object>> {
   fields(): DbSourceFields<TSourceEntries> {
     let result: any = {};
     for (let name in this.entries) {
-      result[name] = this.entries[name].fields();
+      result[name] = this.entries[name].fields(name);
     }
     return result as DbSourceFields<TSourceEntries>;
   }
@@ -131,53 +131,53 @@ export class DbQuery<
   }
 }
 
-export class ValueContainer<T> {
-  value: T;
-  constructor(value: T) {
-    this.value = value;
-  }
+// export class ValueContainer<T> {
+//   value: T;
+//   constructor(value: T) {
+//     this.value = value;
+//   }
 
-  getValue(): T {
-    return this.value;
-  }
-  // some other logic
-}
+//   getValue(): T {
+//     return this.value;
+//   }
+//   // some other logic
+// }
 
-export function wrapValues<T extends object>(
-  proto: T
-): { [K in keyof T]: ValueContainer<T[K]> } {
-  const result: any = {};
-  for (let name in proto) {
-    const value = proto[name];
-    result[name] = new ValueContainer(value);
-  }
-  return result;
-}
+// export function wrapValues<T extends object>(
+//   proto: T
+// ): { [K in keyof T]: ValueContainer<T[K]> } {
+//   const result: any = {};
+//   for (let name in proto) {
+//     const value = proto[name];
+//     result[name] = new ValueContainer(value);
+//   }
+//   return result;
+// }
 
-export function unwrapValues<T extends Record<string, ValueContainer<any>>>(
-  wrappedValues: T
-): { [K in keyof T]: T[K] extends ValueContainer<infer U> ? U : never } {
-  const result: any = {};
-  for (let name in wrappedValues) {
-    const value = wrappedValues[name].getValue();
-    result[name] = value;
-  }
-  return result;
-}
+// export function unwrapValues<T extends Record<string, ValueContainer<any>>>(
+//   wrappedValues: T
+// ): { [K in keyof T]: T[K] extends ValueContainer<infer U> ? U : never } {
+//   const result: any = {};
+//   for (let name in wrappedValues) {
+//     const value = wrappedValues[name].getValue();
+//     result[name] = value;
+//   }
+//   return result;
+// }
 
-const values = {
-  a: 123,
-  b: "abc",
-};
+// const values = {
+//   a: 123,
+//   b: "abc",
+// };
 
-const wrappedValues = wrapValues(values);
-const vals = unwrapValues(wrappedValues);
+// const wrappedValues = wrapValues(values);
+// const vals = unwrapValues(wrappedValues);
 
-function processWrappedValues<T extends Record<string, any>>(wrapped: {
-  [K in keyof T]: ValueContainer<T[K]>;
-}) {
-  for (const key in wrapped) {
-    const container = wrapped[key];
-    console.log(`Key: ${key}, Value: ${container.getValue()}`);
-  }
-}
+// function processWrappedValues<T extends Record<string, any>>(wrapped: {
+//   [K in keyof T]: ValueContainer<T[K]>;
+// }) {
+//   for (const key in wrapped) {
+//     const container = wrapped[key];
+//     console.log(`Key: ${key}, Value: ${container.getValue()}`);
+//   }
+// }

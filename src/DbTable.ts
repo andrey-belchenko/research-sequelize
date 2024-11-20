@@ -53,8 +53,10 @@ export class DbTable<TSetProto extends object> extends DbSet<TSetProto> {
 
 export class DbSource<TSourceEntries extends DbSourceEntries<object>> {
   private entries: TSourceEntries;
-  constructor(entries: TSourceEntries) {
+  private joinOptions: { [key: string]: { type: string; on: string } };
+  constructor(entries: TSourceEntries, joinOptions: any = {}) {
     this.entries = entries;
+    this.joinOptions = joinOptions;
   }
   fields(): DbSourceFields<TSourceEntries> {
     let result: any = {};
@@ -64,20 +66,36 @@ export class DbSource<TSourceEntries extends DbSourceEntries<object>> {
     return result as DbSourceFields<TSourceEntries>;
   }
 
-  join<TJoinedEntry extends DbSourceEntries<object>>(
-    entry: TJoinedEntry
+  innerJoin<TJoinedEntry extends DbSourceEntries<object>>(
+    entry: TJoinedEntry,
+    on: (src: DbSourceFields<TSourceEntries & TJoinedEntry>) => string
   ): DbSource<TSourceEntries & TJoinedEntry> {
     let entries = {
       ...this.entries,
       ...entry,
     };
-    return new DbSource(entries) as DbSource<TSourceEntries & TJoinedEntry>;
+    let joinOptions = { ...this.joinOptions };
+    let bufferSource = new DbSource(entries);
+    for (let name in entry) {
+      joinOptions[name] = {
+        type: "inner",
+        on: on(bufferSource.fields()),
+      };
+    }
+    return new DbSource(entries, joinOptions) as DbSource<
+      TSourceEntries & TJoinedEntry
+    >;
   }
 
   sql() {
     let items = [];
     for (let name in this.entries) {
-      items.push(`${this.entries[name].expression()} as ${name}`);
+      let expr = `${this.entries[name].expression()} as ${name}`;
+      const option = this.joinOptions[name];
+      if (option) {
+        expr = `${option.type} join ${expr} on ${option.on}`;
+      }
+      items.push(expr);
     }
     return items.join("\n");
   }

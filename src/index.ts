@@ -45,17 +45,19 @@ const qry = new DbQuery(
   new DbSource({ a: msr_фин_начисл })
     .innerJoin(
       { d: dim_договор },
-      (src) => `${src.a.договор_id}=${src.d.договор_id}`
+      ({ a, d }) => `${a.договор_id}=${d.договор_id}`
     )
     .innerJoin(
       { ab: dim_абонент },
       (src) => `${src.d.абонент_id}=${src.ab.абонент_id}`
     ),
-  (src) => ({
-    абонент: src.ab.имя,
-    договор: src.d.номер,
-    начислено: src.a.начисл,
-  })
+  ({ a, d, ab }) => ({
+    абонент: ab.имя,
+    договор: d.номер,
+    начислено: `sum(${a.начисл})`,
+  }),
+  ({ d }) => `${d.номер} = '1740 Э'`,
+  ({ d, ab }) => [d.номер, ab.имя]
 );
 
 console.log(qry.querySql());

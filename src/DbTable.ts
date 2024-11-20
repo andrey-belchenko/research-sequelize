@@ -106,23 +106,41 @@ export class DbQuery<
   TSelectResult extends object
 > extends DbSet<TSelectResult> {
   private from: DbSource<TSourceEntries>;
-  private selectOptions: object;
+  private selectExpression: object;
+  private whereExpression?: string;
+  private groupByExpression?: string[];
   constructor(
     from: DbSource<TSourceEntries>,
-    select: (src: DbSourceFields<TSourceEntries>) => TSelectResult
+    select: (src: DbSourceFields<TSourceEntries>) => TSelectResult,
+    where?: (src: DbSourceFields<TSourceEntries>) => string,
+    groupBy?: (src: DbSourceFields<TSourceEntries>) => string[]
   ) {
-    const selectOptions = select(from.fields());
-    super(selectOptions);
-    this.selectOptions = selectOptions;
+    const sourceFields = from.fields();
+    const selectExpression = select(sourceFields);
+    super(selectExpression);
+    this.selectExpression = selectExpression;
+    if (where) {
+      this.whereExpression = where(sourceFields);
+    }
+
+    if (groupBy) {
+      this.groupByExpression = groupBy(sourceFields);
+    }
     this.from = from;
   }
 
   querySql(): string {
-    const selectFields = Object.entries(this.selectOptions).map(
+    const selectFields = Object.entries(this.selectExpression).map(
       ([key, value]) => `${value} as ${key}`
     );
-    const sql = `select ${selectFields.join(",")} from ${this.from.sql()}`;
+    let sql = `select ${selectFields.join(",")} from ${this.from.sql()}`;
+    if (this.whereExpression) {
+      sql += ` where ${this.whereExpression}`;
+    }
 
+    if (this.groupByExpression) {
+      sql += ` group by ${this.groupByExpression.join(",")}`;
+    }
     return sqlFormatter.format(sql, { language: "postgresql" });
   }
 

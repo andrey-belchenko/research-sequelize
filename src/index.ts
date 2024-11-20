@@ -3,7 +3,7 @@
 // };
 // console.log(greet("World"));
 
-import { DbQuery, DbSource, DbTable } from "./DbTable";
+import { DbSelect, DbFrom, DbTable } from "./DbTable";
 
 interface msr_фин_начисл {
   id: number;
@@ -36,20 +36,20 @@ const table = new DbTable("report_dm.msr_фин_начисл", exampleObject);
 //   field1: `${fields.начисл} * 10`,
 // }));
 
-const qry = new DbQuery(table, (fields) => ({
+const qry = new DbSelect(table, (fields) => ({
   field1: fields.договор_id,
   field2: `${fields.начисл} * 10`,
 }));
 console.log(qry.querySql());
 
-const qry2 = new DbQuery(qry, (fields) => ({
+const qry2 = new DbSelect(qry, (fields) => ({
   field3: fields.field1,
   field4: fields.field2,
 }));
 
 console.log(qry2.querySql());
 
-let src = new DbSource({ a: qry2 }).join({ b: table }).join({ c: qry });
+let src = new DbFrom({ a: qry2 }).join({ b: table }).join({ c: qry });
 
 let ff = src.fields();
 
@@ -57,7 +57,7 @@ let x1 = ff.a.field3;
 
 let xx = qry2.fields();
 
-let a: DbQuery<
+let a: DbSelect<
   {
     field1: string;
     field2: string;
@@ -70,10 +70,6 @@ let a: DbQuery<
 
 // let ss = src.dbSet();
 
-let ee = src.entry();
 
-// let ssf = src.dbSetFields();
-
-let x = ee.a;
 
 // let x = srcFields.a;

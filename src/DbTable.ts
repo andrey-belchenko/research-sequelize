@@ -68,32 +68,21 @@ export class DbTable<TSetProto extends object> extends DbSet<TSetProto> {
 //   }
 // }
 
-export class DbSource<TEntry extends DbSourceEntry<object>> {
+export class DbFrom<TEntry extends DbSourceEntry<object>> {
   constructor(sources: TEntry) {}
   fields(): DbSourceFields<TEntry> {
     return {} as DbSourceFields<TEntry>;
   }
 
-  //   dbSet(): TSet {
-  //     return {} as TSet;
-  //   }
-
-  //   dbSetFields(): DbSetFields<TSet> {
-  //     return {} as DbSetFields<TSet>;
-  //   }
-
   join<TJoinedEntry extends DbSourceEntry<object>>(
     entry: TJoinedEntry
-  ): DbSource<TEntry & TJoinedEntry> {
-    return {} as DbSource<TEntry & TJoinedEntry>;
+  ): DbFrom<TEntry & TJoinedEntry> {
+    return {} as DbFrom<TEntry & TJoinedEntry>;
   }
 
-  entry(): TEntry {
-    return {} as TEntry;
-  }
 }
 
-export class DbQuery<
+export class DbSelect<
   TSource extends object,
   TResult extends object
 > extends DbSet<TResult> {
@@ -123,36 +112,7 @@ export class DbQuery<
   }
 }
 
-// export class ValueContainer<T> {
-//   value: T;
-//   constructor(value: T) {
-//     this.value = value;
-//   }
 
-//   getValue(): T {
-//     return this.value;
-//   }
-//   // some other logic
-// }
-
-// export function wrapValues(proto: any) {
-//   const result: any = {};
-//   for (let name in proto) {
-//     const value = proto[name];
-//     result[name] = new ValueContainer(value);
-//   }
-//   return result;
-// }
-
-// const values = {
-//   a: 123,
-//   b: "abc",
-// };
-
-// const wrappedValues = wrapValues(values) as {
-//   a: ValueContainer<number>;
-//   b: ValueContainer<string>;
-// };
 
 export class ValueContainer<T> {
   value: T;

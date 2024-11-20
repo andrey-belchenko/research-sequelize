@@ -1,15 +1,17 @@
+import * as sqlFormatter from "sql-formatter";
+
 export type DbSetFields<TSetProto extends object> = {
   [K in keyof TSetProto]: string;
 };
 
-export type DbSourceFields<TEntry extends DbSourceEntry<object>> = {
-  [K in keyof TEntry]: DbSetFields<
-    TEntry[K] extends DbSet<infer TSetProto> ? TSetProto : never
+export type DbSourceFields<TSourceEntries extends DbSourceEntries<object>> = {
+  [K in keyof TSourceEntries]: DbSetFields<
+    TSourceEntries[K] extends DbSet<infer TSetProto> ? TSetProto : never
   >;
 };
 // ValueContainer<infer U> ? U : never
 // extends ValueContainer<infer U> ? U : never
-export type DbSourceEntry<TSetProto extends object> = {
+export type DbSourceEntries<TSetProto extends object> = {
   [key: string]: DbSet<TSetProto>;
 };
 
@@ -29,7 +31,7 @@ export abstract class DbSet<TSetProto extends object> {
     return fieldNames;
   }
 
-  abstract sql(): string;
+  abstract expression(): string;
   abstract querySql(): string;
 }
 
@@ -40,7 +42,7 @@ export class DbTable<TSetProto extends object> extends DbSet<TSetProto> {
     super(proto);
     this.name = name;
   }
-  sql() {
+  expression() {
     return this.name;
   }
 
@@ -49,70 +51,67 @@ export class DbTable<TSetProto extends object> extends DbSet<TSetProto> {
   }
 }
 
-// export class DbSource<TSet extends object> {
-//   constructor(sources: { [key: string]: DbSet<TSet> }) {}
-//   fields(): DbSourceFields<{ [key: string]: DbSet<TSet> }, TSet> {
-//     return {} as DbSourceFields<{ [key: string]: DbSet<TSet> }, TSet>;
-//   }
-
-//   dbSet(): TSet {
-//     return {} as TSet;
-//   }
-
-//   dbSetFields(): DbSetFields<TSet> {
-//     return {} as DbSetFields<TSet>;
-//   }
-
-//   entry(): { [key: string]: DbSet<TSet> } {
-//     return {} as { [key: string]: DbSet<TSet> };
-//   }
-// }
-
-export class DbFrom<TEntry extends DbSourceEntry<object>> {
-  constructor(sources: TEntry) {}
-  fields(): DbSourceFields<TEntry> {
-    return {} as DbSourceFields<TEntry>;
+export class DbSource<TSourceEntries extends DbSourceEntries<object>> {
+  private entries: TSourceEntries;
+  constructor(entries: TSourceEntries) {
+    this.entries = entries;
+  }
+  fields(): DbSourceFields<TSourceEntries> {
+    let result: any = {};
+    for (let name in this.entries) {
+      result[name] = this.entries[name].fields();
+    }
+    return result as DbSourceFields<TSourceEntries>;
   }
 
-  join<TJoinedEntry extends DbSourceEntry<object>>(
+  join<TJoinedEntry extends DbSourceEntries<object>>(
     entry: TJoinedEntry
-  ): DbFrom<TEntry & TJoinedEntry> {
-    return {} as DbFrom<TEntry & TJoinedEntry>;
+  ): DbSource<TSourceEntries & TJoinedEntry> {
+    let entries = {
+      ...this.entries,
+      ...entry,
+    };
+    return new DbSource(entries) as DbSource<TSourceEntries & TJoinedEntry>;
   }
 
+  sql() {
+    let items = [];
+    for (let name in this.entries) {
+      items.push(`${this.entries[name].expression()} as ${name}`);
+    }
+    return items.join("\n");
+  }
 }
 
-export class DbSelect<
-  TSource extends object,
-  TResult extends object
-> extends DbSet<TResult> {
-  private source: DbSet<TSource>;
-  //   private select: (fields: DbTableFields<TSource>) => TResult;
+export class DbQuery<
+  TSourceEntries extends DbSourceEntries<object>,
+  TSelectResult extends object
+> extends DbSet<TSelectResult> {
+  private from: DbSource<TSourceEntries>;
   private selectOptions: object;
   constructor(
-    source: DbSet<TSource>,
-    select: (fields: DbSetFields<TSource>) => TResult
+    from: DbSource<TSourceEntries>,
+    select: (src: DbSourceFields<TSourceEntries>) => TSelectResult
   ) {
-    const selectOptions = select(source.fields());
+    const selectOptions = select(from.fields());
     super(selectOptions);
     this.selectOptions = selectOptions;
-    this.source = source;
-    // this.select = select;
+    this.from = from;
   }
 
   querySql(): string {
     const selectFields = Object.entries(this.selectOptions).map(
       ([key, value]) => `${value} as ${key}`
     );
-    return `select ${selectFields.join(",")} from ${this.source.sql()}`;
+    const sql = `select ${selectFields.join(",")} from ${this.from.sql()}`;
+
+    return sqlFormatter.format(sql, { language: "postgresql" });
   }
 
-  sql() {
+  expression() {
     return `(${this.querySql()})`;
   }
 }
-
-
 
 export class ValueContainer<T> {
   value: T;
@@ -136,15 +135,6 @@ export function wrapValues<T extends object>(
   }
   return result;
 }
-
-// export function unwrapValues(wrappedValues:any){
-//     const result: any = {};
-//     for (let name in wrappedValues) {
-//       const value = wrappedValues[name].getValue();
-//       result[name] = value;
-//     }
-//     return result;
-// }
 
 export function unwrapValues<T extends Record<string, ValueContainer<any>>>(
   wrappedValues: T

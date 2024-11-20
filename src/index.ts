@@ -3,7 +3,7 @@
 // };
 // console.log(greet("World"));
 
-import { DbTable } from "./DbTable";
+import { DbQuery, DbSource, DbTable } from "./DbTable";
 
 interface msr_фин_начисл {
   id: number;
@@ -29,7 +29,54 @@ const exampleObject = {
   начисл: 1000.5,
 };
 
-const table = new DbTable(exampleObject);
-const fields = table.fields();
+const table = new DbTable("report_dm.msr_фин_начисл", exampleObject);
+// const fields = table.fields();
 
-console.log(fields);
+// const result = table.query((fields) => ({
+//   field1: `${fields.начисл} * 10`,
+// }));
+
+const qry = new DbQuery(table, (fields) => ({
+  field1: fields.договор_id,
+  field2: `${fields.начисл} * 10`,
+}));
+console.log(qry.querySql());
+
+const qry2 = new DbQuery(qry, (fields) => ({
+  field3: fields.field1,
+  field4: fields.field2,
+}));
+
+console.log(qry2.querySql());
+
+
+let src = new DbSource({ a: qry2 });
+
+let ff = src.fields();
+
+let qq = ff.a
+
+let xx = qry2.fields()
+
+let a:DbQuery<{
+    field1: string;
+    field2: string;
+}, {
+    field3: string;
+    field4: string;
+}>
+
+
+
+
+// let ss = src.dbSet();
+
+let ee = src.entry();
+
+
+
+// let ssf = src.dbSetFields();
+
+let x = ee.a;
+
+// let x = srcFields.a;
